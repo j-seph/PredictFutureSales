@@ -1,0 +1,88 @@
+---
+title: "eda"
+author: "joseph"
+date: "26/05/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load packages
+``` {r packages}
+library(data.table)
+library(ggplot2)
+library(scales)
+```
+
+Load datasets
+``` {r datasets}
+items <- fread('items.csv')
+cats <- fread('item_categories.csv')
+shops <- fread('shops.csv')
+train <- fread('sales_train.csv.gz')
+```
+
+EDA of items.csv, item_categories.csv, shops.csv
+
+```{r eda}
+options(scipen = 999)
+str(items) # item_name, item_id, item_category_id
+str(cats) # item_category_name, item_category_id
+str(shops) # shop_name, shop_id 
+
+items <- merge(items, cats) # merge items and cats together
+setcolorder(items, c('item_id', 'item_category_id', 'item_name', 'item_category_name')) # reorder cols
+
+str(train) # date, date_block_num, shop_id, item_id, item_price, item_cnt_day
+```
+
+``` {r total qty}
+item_month <- train[, .(item_qty = sum(item_cnt_day)), date_block_num]
+ggplot(item_month, aes(date_block_num, item_qty)) + 
+    geom_line() + 
+    scale_y_continuous(labels = comma)
+```
+
+Timeseries of items sold by month shows two peaks in December 2013 and 2014 and an overall decreasing trend
+
+``` {r total sales}
+train[, item_sales := item_price * item_cnt_day]
+item_price <- train[, .(total_sales = sum(item_sales), date_block_num]
+
+par(mfrow = c(1, 2))
+ggplot(item_price, aes(date_block_num, total_sales)) + 
+    geom_line() + 
+    ggtitle('Total sales by month') +
+    scale_y_continuous(labels = comma)
+```
+
+Despite sales qty decreasing, total sales remains relatively stable over the 34 month history
+
+``` {r shops}
+shop_sales <- train[, .(total_sales = sum(item_sales)), shop_id]
+shop_sales[, sales_pct := total_sales/sum(total_sales)]
+nrow(shop_sales[sales_pct < 0.01])/nrow(shop_sales) # 33% of all stores each contribute < 1% of total sales
+
+ggplot(shop_sales, aes(shop_id, sales_pct)) + 
+    geom_bar(stat = 'identity') +
+    ggtitle('Total sales percent by store') + 
+    geom_hline(yintercept = 0.01, linetype = 'dashed', color = 'red')
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
