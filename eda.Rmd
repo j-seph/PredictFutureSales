@@ -49,7 +49,7 @@ Timeseries of items sold by month shows two peaks in December 2013 and 2014 and 
 
 ``` {r total sales}
 train[, item_sales := item_price * item_cnt_day]
-item_price <- train[, .(total_sales = sum(item_sales), date_block_num]
+item_price <- train[, .(total_sales = sum(item_sales)), date_block_num]
 
 par(mfrow = c(1, 2))
 ggplot(item_price, aes(date_block_num, total_sales)) + 
